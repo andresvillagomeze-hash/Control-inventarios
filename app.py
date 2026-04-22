@@ -24,6 +24,42 @@ st.set_page_config(
     layout="wide",
 )
 
+# ══════════════════════════════════════════════════════════════
+# ██  AUTENTICACIÓN (LOGIN BÁSICO)
+# ══════════════════════════════════════════════════════════════
+
+def check_password():
+    """Retorna True si la contraseña es correcta."""
+    def password_entered():
+        # Verificamos contra la variable APP_PASSWORD en los secrets
+        # Si no existe, usamos una por defecto para evitar que se rompa, pero debes configurarla.
+        if st.session_state["password"] == st.secrets.get("APP_PASSWORD", "Zico2024*"):
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]  # Por seguridad, borramos la variable
+        else:
+            st.session_state["password_correct"] = False
+
+    if st.session_state.get("password_correct", False):
+        return True
+
+    # Diseño de la pantalla de login
+    st.markdown("<br><br><br>", unsafe_allow_html=True)
+    col1, col2, col3 = st.columns([1, 1, 1])
+    with col2:
+        st.markdown(f"<h2 style='text-align: center; color: {GREEN};'>🔒 Acceso Privado</h2>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align: center; color: gray;'>Por favor, introduce la contraseña de la organización para acceder al Dashboard de Inventarios.</p>", unsafe_allow_html=True)
+        st.text_input(
+            "Contraseña", type="password", on_change=password_entered, key="password"
+        )
+        if "password_correct" in st.session_state and not st.session_state["password_correct"]:
+            st.error("❌ Contraseña incorrecta")
+    return False
+
+if not check_password():
+    st.stop()  # Detiene la ejecución del resto del código si no hay contraseña
+
+
+
 
 # ══════════════════════════════════════════════════════════════
 # ██  CSS PERSONALIZADO
