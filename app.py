@@ -33,7 +33,7 @@ def check_password():
     def password_entered():
         # Verificamos contra la variable APP_PASSWORD en los secrets
         # Si no existe, usamos una por defecto para evitar que se rompa, pero debes configurarla.
-        if st.session_state["password"] == st.secrets.get("APP_PASSWORD", "Zico2024*"):
+        if st.session_state["password"] == st.secrets.get("APP_PASSWORD"):
             st.session_state["password_correct"] = True
             del st.session_state["password"]  # Por seguridad, borramos la variable
         else:
@@ -254,9 +254,13 @@ with st.sidebar:
         fecha_min_db = inicio_mes
         fecha_max_db = hoy
 
+    # Clampear el valor por defecto para que siempre caiga dentro del rango disponible
+    valor_default_inicio = max(inicio_mes, fecha_min_db)
+    valor_default_inicio = min(valor_default_inicio, fecha_max_db)
+
     fecha_inicio = st.date_input(
         "Desde",
-        value=max(inicio_mes, fecha_min_db),
+        value=valor_default_inicio,
         min_value=fecha_min_db,
         max_value=fecha_max_db,
         key="fecha_inicio",
