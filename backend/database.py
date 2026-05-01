@@ -44,9 +44,24 @@ def verificar_o_crear_tabla() -> bool:
 
 @st.cache_data(ttl=300)
 def cargar_tabla(nombre_tabla: str) -> pd.DataFrame:
-    """Carga todos los registros de una tabla de Supabase."""
-    response = supabase.table(nombre_tabla).select("*").execute()
-    return pd.DataFrame(response.data)
+    """Carga todos los registros de una tabla de Supabase (con paginación)."""
+    all_data = []
+    page_size = 1000
+    offset = 0
+    while True:
+        response = (
+            supabase.table(nombre_tabla)
+            .select("*")
+            .range(offset, offset + page_size - 1)
+            .execute()
+        )
+        if not response.data:
+            break
+        all_data.extend(response.data)
+        if len(response.data) < page_size:
+            break  # última página
+        offset += page_size
+    return pd.DataFrame(all_data)
 
 
 # ── Inserción ────────────────────────────────────────────────
@@ -72,9 +87,23 @@ def insertar_datos(df: pd.DataFrame, nombre_tabla: str) -> int:
 def obtener_fechas_cargadas() -> set:
     """Consulta las fechas únicas ya presentes en la tabla inventarios."""
     try:
-        response = supabase.table(NOMBRE_TABLA).select("fecha").execute()
-        if response.data:
-            return set(row["fecha"] for row in response.data if row.get("fecha"))
+        all_fechas = set()
+        page_size = 1000
+        offset = 0
+        while True:
+            response = (
+                supabase.table(NOMBRE_TABLA)
+                .select("fecha")
+                .range(offset, offset + page_size - 1)
+                .execute()
+            )
+            if not response.data:
+                break
+            all_fechas.update(row["fecha"] for row in response.data if row.get("fecha"))
+            if len(response.data) < page_size:
+                break
+            offset += page_size
+        return all_fechas
     except Exception:
         pass
     return set()
