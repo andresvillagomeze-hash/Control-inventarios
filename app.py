@@ -8,7 +8,7 @@ import pandas as pd
 from backend.constantes import (
     DARK, GREEN, GREEN_LIGHT, GRAY, GRAY_LIGHT, WHITE,
 )
-from backend.database import verificar_o_crear_tabla, cargar_tabla
+from backend.database import verificar_o_crear_tabla, cargar_tabla, obtener_rango_fechas
 from backend.constantes import NOMBRE_TABLA
 
 from views import resumen, analisis_producto, carga_datos
@@ -233,26 +233,25 @@ tabla_lista = verificar_o_crear_tabla()
 if not tabla_lista:
     st.stop()
 
-df_raw = cargar_tabla(NOMBRE_TABLA)
+import datetime
+
+hoy = datetime.date.today()
+inicio_mes = hoy.replace(day=1)
+
+# ── Consulta ligera: solo min/max fechas (no carga toda la tabla) ──
+fecha_min_str, fecha_max_str = obtener_rango_fechas(NOMBRE_TABLA)
+
+if fecha_min_str and fecha_max_str:
+    fecha_min_db = datetime.date.fromisoformat(fecha_min_str)
+    fecha_max_db = datetime.date.fromisoformat(fecha_max_str)
+else:
+    fecha_min_db = inicio_mes
+    fecha_max_db = hoy
 
 # ── Sidebar: filtros y parámetros ─────────────────────────────
 with st.sidebar:
     # ── Filtro de rango de fechas ──
     st.markdown("### 📅 Rango de fechas")
-
-    import datetime
-
-    hoy = datetime.date.today()
-    inicio_mes = hoy.replace(day=1)
-
-    # Determinar rango disponible en los datos
-    if not df_raw.empty and "fecha" in df_raw.columns:
-        fechas_db = pd.to_datetime(df_raw["fecha"], errors="coerce").dropna()
-        fecha_min_db = fechas_db.min().date() if not fechas_db.empty else inicio_mes
-        fecha_max_db = fechas_db.max().date() if not fechas_db.empty else hoy
-    else:
-        fecha_min_db = inicio_mes
-        fecha_max_db = hoy
 
     # Clampear el valor por defecto para que siempre caiga dentro del rango disponible
     valor_default_inicio = max(inicio_mes, fecha_min_db)
@@ -293,18 +292,10 @@ with st.sidebar:
         help="Un producto con inventario 0 en los últimos N días se marca como desabastecido.",
     )
 
-# ── Filtrar datos por rango de fechas ─────────────────────────
-if not df_raw.empty and "fecha" in df_raw.columns:
-    df_filtrado_fecha = df_raw.copy()
-    # Comparar como strings YYYY-MM-DD (mismo formato que la base)
-    str_inicio = fecha_inicio.strftime("%Y-%m-%d")
-    str_fin = fecha_fin.strftime("%Y-%m-%d")
-    df_filtrado_fecha = df_filtrado_fecha[
-        (df_filtrado_fecha["fecha"] >= str_inicio)
-        & (df_filtrado_fecha["fecha"] <= str_fin)
-    ]
-else:
-    df_filtrado_fecha = df_raw
+# ── Cargar SOLO los datos del rango seleccionado (filtrado server-side) ──
+str_inicio = fecha_inicio.strftime("%Y-%m-%d")
+str_fin = fecha_fin.strftime("%Y-%m-%d")
+df_filtrado_fecha = cargar_tabla(NOMBRE_TABLA, fecha_inicio=str_inicio, fecha_fin=str_fin)
 
 
 # ══════════════════════════════════════════════════════════════
@@ -324,4 +315,4 @@ with tab2:
     analisis_producto.render(df_filtrado_fecha)
 
 with tab3:
-    carga_datos.render(df_raw)  # Tab de carga siempre ve todos los datos
+    carga_datos.render(df_filtrado_fecha)  # Tab de carga usa los datos filtrados

@@ -43,18 +43,43 @@ def verificar_o_crear_tabla() -> bool:
 # ── Lectura ──────────────────────────────────────────────────
 
 @st.cache_data(ttl=300)
-def cargar_tabla(nombre_tabla: str) -> pd.DataFrame:
-    """Carga todos los registros de una tabla de Supabase (con paginación)."""
+def obtener_rango_fechas(nombre_tabla: str) -> tuple:
+    """Consulta ligera: obtiene solo la fecha mínima y máxima de la tabla."""
+    try:
+        res_min = (
+            supabase.table(nombre_tabla)
+            .select("fecha")
+            .order("fecha", desc=False)
+            .limit(1)
+            .execute()
+        )
+        res_max = (
+            supabase.table(nombre_tabla)
+            .select("fecha")
+            .order("fecha", desc=True)
+            .limit(1)
+            .execute()
+        )
+        fecha_min = res_min.data[0]["fecha"] if res_min.data else None
+        fecha_max = res_max.data[0]["fecha"] if res_max.data else None
+        return fecha_min, fecha_max
+    except Exception:
+        return None, None
+
+
+@st.cache_data(ttl=300)
+def cargar_tabla(nombre_tabla: str, fecha_inicio: str = None, fecha_fin: str = None) -> pd.DataFrame:
+    """Carga registros de Supabase filtrados por rango de fechas (con paginación)."""
     all_data = []
     page_size = 1000
     offset = 0
     while True:
-        response = (
-            supabase.table(nombre_tabla)
-            .select("*")
-            .range(offset, offset + page_size - 1)
-            .execute()
-        )
+        query = supabase.table(nombre_tabla).select("*")
+        if fecha_inicio:
+            query = query.gte("fecha", fecha_inicio)
+        if fecha_fin:
+            query = query.lte("fecha", fecha_fin)
+        response = query.range(offset, offset + page_size - 1).execute()
         if not response.data:
             break
         all_data.extend(response.data)
