@@ -12,7 +12,7 @@ from backend.constantes import GREEN, GREEN_LIGHT, RED, AMBER, WHITE
 from backend.analisis import preparar_df, clasificar_productos, calcular_consumo_mensual, plotly_layout
 
 
-def render(df_raw, umbral_cv, umbral_std, dias_desabasto):
+def render(df_raw, umbral_cv, umbral_std, dias_desabasto, umbral_inv_min):
     """Renderiza la pestaña de resumen de rotación."""
     if df_raw.empty:
         st.info("📭 No hay datos. Ve a la pestaña **📤 Carga de Datos** para subir archivos Excel.")
@@ -21,7 +21,7 @@ def render(df_raw, umbral_cv, umbral_std, dias_desabasto):
     df = preparar_df(df_raw)
 
     # ── Clasificar ──
-    stats = clasificar_productos(df, umbral_cv, umbral_std, dias_desabasto)
+    stats = clasificar_productos(df, umbral_cv, umbral_std, dias_desabasto, umbral_inv_min)
 
     if stats.empty:
         st.warning("⚠️ No se pudo clasificar. Verifica que existan las columnas 'item' e 'inventario_cd_en_unidades'.")

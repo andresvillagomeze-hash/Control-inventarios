@@ -43,11 +43,12 @@ def preparar_df(df_raw: pd.DataFrame) -> pd.DataFrame:
 # ══════════════════════════════════════════════════════════════
 
 def clasificar_productos(df: pd.DataFrame, umbral_cv: float = 0.15,
-                          umbral_std: float = 1.0, dias_desabasto: int = 3
+                          umbral_std: float = 1.0, dias_desabasto: int = 3,
+                          umbral_inv_min: float = 50.0
                           ) -> pd.DataFrame:
     """
     Clasifica cada producto (item) en:
-    - 🌟 Estrella: coeficiente de variación > umbral_cv
+    - 🌟 Estrella: CV > umbral_cv  Y  inventario promedio >= umbral_inv_min
     - 🚨 Desabastecido: inventario = 0 en las últimas N fechas
     - ⚠️ Estancado: inventario > 0 pero std ≈ 0
     """
@@ -96,7 +97,7 @@ def clasificar_productos(df: pd.DataFrame, umbral_cv: float = 0.15,
             return "🚨 Desabastecido"
         if row["inv_promedio"] > 0 and row["inv_std"] <= umbral_std:
             return "⚠️ Estancado"
-        if row["cv"] > umbral_cv and row["inv_promedio"] > 0:
+        if row["cv"] > umbral_cv and row["inv_promedio"] >= umbral_inv_min:
             return "🌟 Estrella"
         return "📦 Normal"
 

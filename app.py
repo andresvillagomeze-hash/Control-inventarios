@@ -291,6 +291,12 @@ with st.sidebar:
         min_value=1, max_value=10, value=3,
         help="Un producto con inventario 0 en los últimos N días se marca como desabastecido.",
     )
+    umbral_inv_min = st.slider(
+        "Inv. promedio mínimo (Estrella)",
+        min_value=10, max_value=500, value=50, step=10,
+        help="Inventario promedio mínimo en unidades para que un producto sea Estrella. "
+             "Productos con pocas unidades tienen CV alto por ruido, no por rotación real.",
+    )
 
 # ── Cargar SOLO los datos del rango seleccionado (filtrado server-side) ──
 str_inicio = fecha_inicio.strftime("%Y-%m-%d")
@@ -309,7 +315,7 @@ tab1, tab2, tab3 = st.tabs([
 ])
 
 with tab1:
-    resumen.render(df_filtrado_fecha, umbral_cv, umbral_std, dias_desabasto)
+    resumen.render(df_filtrado_fecha, umbral_cv, umbral_std, dias_desabasto, umbral_inv_min)
 
 with tab2:
     analisis_producto.render(df_filtrado_fecha)
