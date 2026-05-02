@@ -8,7 +8,7 @@ import streamlit as st
 import pandas as pd
 from backend.constantes import (
     DARK, GREEN, GREEN_LIGHT, GRAY, GRAY_LIGHT, WHITE,
-    NOMBRE_TABLA, MARCAS_KARAYTE,
+    NOMBRE_TABLA, MARCAS_EXISTENTES,
 )
 from backend.database import verificar_o_crear_tabla, cargar_tabla, obtener_rango_fechas
 
@@ -279,20 +279,20 @@ with st.sidebar:
     st.markdown("### 🏷️ Filtro de marcas")
     modo_marca = st.radio(
         "Mostrar",
-        ["Todas", "Solo Karayte", "Solo Marcas Blancas"],
+        ["Todas", "Solo Marcas Propias", "Solo Marcas Blancas"],
         index=0,
         key="modo_marca",
-        help="Filtra productos según si pertenecen a las marcas de Karayte o son marcas blancas.",
+        help="Filtra productos según si pertenecen a las marcas propias o son marcas blancas.",
     )
 
-    marcas_seleccionadas = MARCAS_KARAYTE  # default
-    if modo_marca == "Solo Karayte":
+    marcas_seleccionadas = MARCAS_EXISTENTES  # default
+    if modo_marca == "Solo Marcas Propias":
         marcas_seleccionadas = st.multiselect(
-            "Marcas Karayte",
-            options=MARCAS_KARAYTE,
-            default=MARCAS_KARAYTE,
+            "Marcas",
+            options=MARCAS_EXISTENTES,
+            default=MARCAS_EXISTENTES,
             key="marcas_sel",
-            help="Selecciona qué marcas Karayte mostrar.",
+            help="Selecciona qué marcas propias mostrar.",
         )
 
     st.markdown("---")
@@ -331,12 +331,12 @@ if not df_filtrado_fecha.empty and "item" in df_filtrado_fecha.columns:
     # Construir patrón regex con las marcas (escapar caracteres especiales como ".")
     patron_marcas = "|".join(re.escape(m) for m in marcas_seleccionadas)
 
-    if modo_marca == "Solo Karayte" and marcas_seleccionadas:
+    if modo_marca == "Solo Marcas Propias" and marcas_seleccionadas:
         df_filtrado_fecha = df_filtrado_fecha[
             df_filtrado_fecha["item"].str.contains(patron_marcas, case=False, na=False)
         ]
     elif modo_marca == "Solo Marcas Blancas":
-        patron_todas = "|".join(re.escape(m) for m in MARCAS_KARAYTE)
+        patron_todas = "|".join(re.escape(m) for m in MARCAS_EXISTENTES)
         df_filtrado_fecha = df_filtrado_fecha[
             ~df_filtrado_fecha["item"].str.contains(patron_todas, case=False, na=False)
         ]

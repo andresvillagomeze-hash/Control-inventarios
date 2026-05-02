@@ -34,8 +34,8 @@ COLUMNAS_TEXTO = [
     "item", "clase_de_mercaderia", "tamanio", "acabado",
 ]
 
-# ── Marcas Karayte (para filtro de marca) ────────────────────
-MARCAS_KARAYTE = [
+# ── Marcas existentes (para filtro de marca) ─────────────────
+MARCAS_EXISTENTES = [
     "KARAY",
     "SG",
     "LO.",
