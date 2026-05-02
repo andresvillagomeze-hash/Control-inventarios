@@ -42,15 +42,16 @@ def preparar_df(df_raw: pd.DataFrame) -> pd.DataFrame:
 # ██  CLASIFICACIÓN DE PRODUCTOS
 # ══════════════════════════════════════════════════════════════
 
-def clasificar_productos(df: pd.DataFrame, umbral_cv: float = 0.15,
-                          umbral_std: float = 1.0, dias_desabasto: int = 3,
-                          umbral_inv_min: float = 50.0
-                          ) -> pd.DataFrame:
+def clasificar_productos(df: pd.DataFrame, umbral_std: float = 1.0,
+                          dias_desabasto: int = 3) -> pd.DataFrame:
     """
     Clasifica cada producto (item) en:
-    - 🌟 Estrella: CV > umbral_cv  Y  inventario promedio >= umbral_inv_min
+    - 🌟 Estrella: CV > P90(cv)  Y  inventario promedio >= P90(inv_promedio)
     - 🚨 Desabastecido: inventario = 0 en las últimas N fechas
     - ⚠️ Estancado: inventario > 0 pero std ≈ 0
+
+    Los umbrales de CV e inventario mínimo se calculan automáticamente
+    como el percentil 90 de los datos.
     """
     col_inv = "inventario_cd_en_unidades"
     if col_inv not in df.columns or "item" not in df.columns:
@@ -67,6 +68,14 @@ def clasificar_productos(df: pd.DataFrame, umbral_cv: float = 0.15,
         lambda r: r["inv_std"] / r["inv_promedio"] if r["inv_promedio"] > 0 else 0,
         axis=1,
     )
+
+    # ── Calcular umbrales automáticos (percentil 90) ──
+    umbral_cv = stats["cv"].quantile(0.90)
+    umbral_inv_min = stats["inv_promedio"].quantile(0.90)
+
+    # Guardar umbrales en attrs para que la vista pueda mostrarlos
+    stats.attrs["umbral_cv_p90"] = round(umbral_cv, 4)
+    stats.attrs["umbral_inv_min_p90"] = round(umbral_inv_min, 2)
 
     # Últimas N fechas para desabasto
     fechas_unicas = sorted(df["fecha"].dropna().unique())

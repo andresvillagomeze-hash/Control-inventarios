@@ -12,7 +12,7 @@ from backend.constantes import GREEN, GREEN_LIGHT, RED, AMBER, WHITE
 from backend.analisis import preparar_df, clasificar_productos, calcular_consumo_mensual, plotly_layout
 
 
-def render(df_raw, umbral_cv, umbral_std, dias_desabasto, umbral_inv_min):
+def render(df_raw, umbral_std, dias_desabasto):
     """Renderiza la pestaña de resumen de rotación."""
     if df_raw.empty:
         st.info("📭 No hay datos. Ve a la pestaña **📤 Carga de Datos** para subir archivos Excel.")
@@ -21,7 +21,7 @@ def render(df_raw, umbral_cv, umbral_std, dias_desabasto, umbral_inv_min):
     df = preparar_df(df_raw)
 
     # ── Clasificar ──
-    stats = clasificar_productos(df, umbral_cv, umbral_std, dias_desabasto, umbral_inv_min)
+    stats = clasificar_productos(df, umbral_std=umbral_std, dias_desabasto=dias_desabasto)
 
     if stats.empty:
         st.warning("⚠️ No se pudo clasificar. Verifica que existan las columnas 'item' e 'inventario_cd_en_unidades'.")
@@ -39,6 +39,11 @@ def render(df_raw, umbral_cv, umbral_std, dias_desabasto, umbral_inv_min):
     m3.metric("🚨 Desabastecidos", f"{len(desabastecidos):,}")
     m4.metric("⚠️ Estancados", f"{len(estancados):,}")
     m5.metric("📅 Días de datos", f"{n_fechas}")
+
+    # ── Umbrales P90 usados ──
+    cv_p90 = stats.attrs.get("umbral_cv_p90", "–")
+    inv_p90 = stats.attrs.get("umbral_inv_min_p90", "–")
+    st.caption(f"📊 Umbrales Estrella (P90): CV > **{cv_p90}** · Inv. promedio ≥ **{inv_p90:,}** uds")
 
     st.markdown("---")
 
