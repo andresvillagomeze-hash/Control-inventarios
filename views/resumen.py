@@ -43,7 +43,8 @@ def render(df_raw, umbral_std, dias_desabasto):
     # ── Umbrales P90 usados ──
     cv_p90 = stats.attrs.get("umbral_cv_p90", "–")
     inv_p90 = stats.attrs.get("umbral_inv_min_p90", "–")
-    st.caption(f"📊 Umbrales Estrella (P90): CV > **{cv_p90}** · Inv. promedio ≥ **{inv_p90:,}** uds")
+    inv_p90_str = f"{inv_p90:,.0f}" if isinstance(inv_p90, (int, float)) else inv_p90
+    st.caption(f"📊 Umbrales Estrella (P90): CV > **{cv_p90}** · Inv. promedio ≥ **{inv_p90_str}** uds")
 
     st.markdown("---")
 
