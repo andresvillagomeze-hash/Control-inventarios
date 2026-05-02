@@ -26,11 +26,29 @@ def limpiar_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
     # Fecha: cada archivo = 1 día, rellenar vacíos con la fecha existente
     if "fecha" in df.columns:
-        df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce", dayfirst=True)
-        fecha_valida = df["fecha"].dropna().iloc[0] if df["fecha"].notna().any() else None
-        if fecha_valida is not None:
-            df["fecha"] = df["fecha"].fillna(fecha_valida)
-            df["fecha"] = df["fecha"].dt.strftime("%Y-%m-%d")
+        # Intentar múltiples formatos para parsear correctamente
+        # Priorizar formato dd/mm/yyyy (dayfirst) que es el estándar en México/LATAM
+        raw_sample = df["fecha"].dropna().iloc[0] if df["fecha"].notna().any() else None
+
+        if raw_sample is not None:
+            # Si Excel ya lo convirtió a datetime, usarlo directamente
+            if isinstance(raw_sample, pd.Timestamp):
+                df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce")
+            elif hasattr(raw_sample, 'year'):  # datetime.datetime nativo
+                df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce")
+            else:
+                # Es string: parsear con dayfirst=True (formato dd/mm/yyyy)
+                df["fecha"] = pd.to_datetime(
+                    df["fecha"], errors="coerce", dayfirst=True
+                )
+
+            fecha_valida = df["fecha"].dropna().iloc[0] if df["fecha"].notna().any() else None
+            if fecha_valida is not None:
+                df["fecha"] = df["fecha"].fillna(fecha_valida)
+                st.info(f"📅 Fecha detectada en el archivo: **{fecha_valida.strftime('%d/%m/%Y')}**")
+                df["fecha"] = df["fecha"].dt.strftime("%Y-%m-%d")
+            else:
+                st.warning("⚠️ No se encontró ninguna fecha válida en el archivo.")
         else:
             st.warning("⚠️ No se encontró ninguna fecha válida en el archivo.")
 
