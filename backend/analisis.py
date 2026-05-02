@@ -72,10 +72,8 @@ def clasificar_productos(df: pd.DataFrame, umbral_std: float = 1.0,
     # ── Calcular umbrales automáticos (percentil 90) ──
     umbral_cv = stats["cv"].quantile(0.90)
     umbral_inv_min = stats["inv_promedio"].quantile(0.90)
-
-    # Guardar umbrales en attrs para que la vista pueda mostrarlos
-    stats.attrs["umbral_cv_p90"] = round(umbral_cv, 4)
-    stats.attrs["umbral_inv_min_p90"] = round(umbral_inv_min, 2)
+    _cv_p90 = round(umbral_cv, 4)
+    _inv_p90 = round(umbral_inv_min, 2)
 
     # Últimas N fechas para desabasto
     fechas_unicas = sorted(df["fecha"].dropna().unique())
@@ -118,7 +116,10 @@ def clasificar_productos(df: pd.DataFrame, umbral_std: float = 1.0,
             info = df.groupby("item")[col].first().reset_index()
             stats = stats.merge(info, on="item", how="left")
 
-    return stats.sort_values("cv", ascending=False).reset_index(drop=True)
+    result = stats.sort_values("cv", ascending=False).reset_index(drop=True)
+    result.attrs["umbral_cv_p90"] = _cv_p90
+    result.attrs["umbral_inv_min_p90"] = _inv_p90
+    return result
 
 
 # ══════════════════════════════════════════════════════════════
