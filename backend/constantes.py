@@ -34,5 +34,17 @@ COLUMNAS_TEXTO = [
     "item", "clase_de_mercaderia", "tamanio", "acabado",
 ]
 
+# ── Marcas Karayte (para filtro de marca) ────────────────────
+MARCAS_KARAYTE = [
+    "KARAY",
+    "SG",
+    "LO.",
+    "EL ARTESANAL",
+    "SX.",
+    "KLIK GIN TONIC",
+    "ESY",
+    "OMEGASOL",
+]
+
 # ── Plotly ───────────────────────────────────────────────────
 PLOTLY_COLORS = [GREEN, GREEN_LIGHT, "#3498db", AMBER, RED, "#9b59b6", "#1abc9c"]

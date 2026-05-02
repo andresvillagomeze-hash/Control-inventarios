@@ -3,13 +3,14 @@ Dashboard de Inventarios · La Favorita
 Entry point — orquesta la configuración, el tema y las pestañas.
 """
 
+import re
 import streamlit as st
 import pandas as pd
 from backend.constantes import (
     DARK, GREEN, GREEN_LIGHT, GRAY, GRAY_LIGHT, WHITE,
+    NOMBRE_TABLA, MARCAS_KARAYTE,
 )
 from backend.database import verificar_o_crear_tabla, cargar_tabla, obtener_rango_fechas
-from backend.constantes import NOMBRE_TABLA
 
 from views import resumen, analisis_producto, carga_datos
 
@@ -274,6 +275,28 @@ with st.sidebar:
 
     st.markdown("---")
 
+    # ── Filtro de marcas ──
+    st.markdown("### 🏷️ Filtro de marcas")
+    modo_marca = st.radio(
+        "Mostrar",
+        ["Todas", "Solo Karayte", "Solo Marcas Blancas"],
+        index=0,
+        key="modo_marca",
+        help="Filtra productos según si pertenecen a las marcas de Karayte o son marcas blancas.",
+    )
+
+    marcas_seleccionadas = MARCAS_KARAYTE  # default
+    if modo_marca == "Solo Karayte":
+        marcas_seleccionadas = st.multiselect(
+            "Marcas Karayte",
+            options=MARCAS_KARAYTE,
+            default=MARCAS_KARAYTE,
+            key="marcas_sel",
+            help="Selecciona qué marcas Karayte mostrar.",
+        )
+
+    st.markdown("---")
+
     # ── Parámetros de clasificación ──
     st.markdown("### ⚙️ Parámetros de clasificación")
     umbral_cv = st.slider(
@@ -302,6 +325,21 @@ with st.sidebar:
 str_inicio = fecha_inicio.strftime("%Y-%m-%d")
 str_fin = fecha_fin.strftime("%Y-%m-%d")
 df_filtrado_fecha = cargar_tabla(NOMBRE_TABLA, fecha_inicio=str_inicio, fecha_fin=str_fin)
+
+# ── Aplicar filtro de marcas (client-side) ──
+if not df_filtrado_fecha.empty and "item" in df_filtrado_fecha.columns:
+    # Construir patrón regex con las marcas (escapar caracteres especiales como ".")
+    patron_marcas = "|".join(re.escape(m) for m in marcas_seleccionadas)
+
+    if modo_marca == "Solo Karayte" and marcas_seleccionadas:
+        df_filtrado_fecha = df_filtrado_fecha[
+            df_filtrado_fecha["item"].str.contains(patron_marcas, case=False, na=False)
+        ]
+    elif modo_marca == "Solo Marcas Blancas":
+        patron_todas = "|".join(re.escape(m) for m in MARCAS_KARAYTE)
+        df_filtrado_fecha = df_filtrado_fecha[
+            ~df_filtrado_fecha["item"].str.contains(patron_todas, case=False, na=False)
+        ]
 
 
 # ══════════════════════════════════════════════════════════════
