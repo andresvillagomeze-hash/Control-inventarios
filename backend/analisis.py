@@ -69,9 +69,11 @@ def clasificar_productos(df: pd.DataFrame, umbral_std: float = 1.0,
         axis=1,
     )
 
-    # ── Calcular umbrales automáticos (percentil 90) ──
+    # ── Calcular umbrales automáticos ──
+    # CV: percentil 90 (solo el top 10% de variación = alta rotación)
+    # Inv. mínimo: percentil 50 (mediana, para filtrar ruido de productos de bajo volumen)
     umbral_cv = stats["cv"].quantile(0.90)
-    umbral_inv_min = stats["inv_promedio"].quantile(0.90)
+    umbral_inv_min = stats["inv_promedio"].quantile(0.50)
     _cv_p90 = round(umbral_cv, 4)
     _inv_p90 = round(umbral_inv_min, 2)
 
