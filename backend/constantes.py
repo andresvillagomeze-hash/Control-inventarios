@@ -37,7 +37,6 @@ COLUMNAS_TEXTO = [
 # ── Marcas existentes (para filtro de marca) ─────────────────
 MARCAS_EXISTENTES = [
     "KARAY",
-    "SG",
     "LO.",
     "EL ARTESANAL",
     "SX.",

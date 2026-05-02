@@ -277,23 +277,13 @@ with st.sidebar:
 
     # ── Filtro de marcas ──
     st.markdown("### 🏷️ Filtro de marcas")
-    modo_marca = st.radio(
-        "Mostrar",
-        ["Todas", "Solo Marcas Propias", "Solo Marcas Blancas"],
-        index=0,
-        key="modo_marca",
-        help="Filtra productos según si pertenecen a las marcas propias o son marcas blancas.",
+    marcas_seleccionadas = st.multiselect(
+        "Marcas",
+        options=MARCAS_EXISTENTES,
+        default=MARCAS_EXISTENTES,
+        key="marcas_sel",
+        help="Selecciona las marcas a mostrar. Si no seleccionas ninguna, se muestran todos los productos.",
     )
-
-    marcas_seleccionadas = MARCAS_EXISTENTES  # default
-    if modo_marca == "Solo Marcas Propias":
-        marcas_seleccionadas = st.multiselect(
-            "Marcas",
-            options=MARCAS_EXISTENTES,
-            default=MARCAS_EXISTENTES,
-            key="marcas_sel",
-            help="Selecciona qué marcas propias mostrar.",
-        )
 
     st.markdown("---")
 
@@ -327,19 +317,11 @@ str_fin = fecha_fin.strftime("%Y-%m-%d")
 df_filtrado_fecha = cargar_tabla(NOMBRE_TABLA, fecha_inicio=str_inicio, fecha_fin=str_fin)
 
 # ── Aplicar filtro de marcas (client-side) ──
-if not df_filtrado_fecha.empty and "item" in df_filtrado_fecha.columns:
-    # Construir patrón regex con las marcas (escapar caracteres especiales como ".")
+if marcas_seleccionadas and not df_filtrado_fecha.empty and "item" in df_filtrado_fecha.columns:
     patron_marcas = "|".join(re.escape(m) for m in marcas_seleccionadas)
-
-    if modo_marca == "Solo Marcas Propias" and marcas_seleccionadas:
-        df_filtrado_fecha = df_filtrado_fecha[
-            df_filtrado_fecha["item"].str.contains(patron_marcas, case=False, na=False)
-        ]
-    elif modo_marca == "Solo Marcas Blancas":
-        patron_todas = "|".join(re.escape(m) for m in MARCAS_EXISTENTES)
-        df_filtrado_fecha = df_filtrado_fecha[
-            ~df_filtrado_fecha["item"].str.contains(patron_todas, case=False, na=False)
-        ]
+    df_filtrado_fecha = df_filtrado_fecha[
+        df_filtrado_fecha["item"].str.contains(patron_marcas, case=False, na=False)
+    ]
 
 
 # ══════════════════════════════════════════════════════════════
