@@ -55,7 +55,7 @@ def render(df_raw):
                 progress = st.progress(0)
                 for idx, archivo in enumerate(archivos):
                     with st.spinner(f"Procesando {archivo.name}…"):
-                        df_raw_upload = pd.read_excel(archivo, skiprows=4)
+                        df_raw_upload = pd.read_excel(archivo, skiprows=4, dtype=str)
                         st.caption(f"📄 {archivo.name}: {len(df_raw_upload):,} filas leídas")
 
                         df_limpio = limpiar_dataframe(df_raw_upload)
@@ -95,7 +95,7 @@ def render(df_raw):
         if archivos:
             preview_file = archivos[0]
             try:
-                df_preview = pd.read_excel(preview_file, skiprows=4, nrows=10)
+                df_preview = pd.read_excel(preview_file, skiprows=4, nrows=10, dtype=str)
                 df_preview.columns = (
                     df_preview.columns.str.strip().str.lower()
                     .str.replace(r"\s+", "_", regex=True)
