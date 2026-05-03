@@ -25,30 +25,30 @@ def limpiar_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     )
 
     # Fecha: cada archivo = 1 día, rellenar vacíos con la fecha existente
+    # IMPORTANTE: El formato del Excel SIEMPRE es YYYY-MM-DD (año-mes-día).
+    # Forzamos conversión a string primero para evitar que Excel/openpyxl
+    # auto-interprete la fecha con día/mes invertido.
     if "fecha" in df.columns:
-        # Intentar múltiples formatos para parsear correctamente
-        # Priorizar formato dd/mm/yyyy (dayfirst) que es el estándar en México/LATAM
-        raw_sample = df["fecha"].dropna().iloc[0] if df["fecha"].notna().any() else None
+        # Paso 1: Convertir TODO a string para neutralizar auto-parsing de Excel
+        df["fecha"] = df["fecha"].astype(str).str.strip()
 
-        if raw_sample is not None:
-            # Si Excel ya lo convirtió a datetime, usarlo directamente
-            if isinstance(raw_sample, pd.Timestamp):
-                df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce")
-            elif hasattr(raw_sample, 'year'):  # datetime.datetime nativo
-                df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce")
-            else:
-                # Es string: parsear con dayfirst=True (formato dd/mm/yyyy)
-                df["fecha"] = pd.to_datetime(
-                    df["fecha"], errors="coerce", dayfirst=True
-                )
+        # Si Excel convirtió a datetime nativo, el str() produce "YYYY-MM-DD HH:MM:SS"
+        # Extraemos solo la parte de fecha (primeros 10 caracteres)
+        df["fecha"] = df["fecha"].str[:10]
 
-            fecha_valida = df["fecha"].dropna().iloc[0] if df["fecha"].notna().any() else None
-            if fecha_valida is not None:
-                df["fecha"] = df["fecha"].fillna(fecha_valida)
-                st.info(f"📅 Fecha detectada en el archivo: **{fecha_valida.strftime('%d/%m/%Y')}**")
-                df["fecha"] = df["fecha"].dt.strftime("%Y-%m-%d")
-            else:
-                st.warning("⚠️ No se encontró ninguna fecha válida en el archivo.")
+        # Reemplazar valores inválidos por NaN
+        df["fecha"] = df["fecha"].replace(["NaT", "nan", "None", ""], pd.NA)
+
+        # Paso 2: Parsear explícitamente con formato YYYY-MM-DD
+        df["fecha"] = pd.to_datetime(
+            df["fecha"], format="%Y-%m-%d", errors="coerce"
+        )
+
+        fecha_valida = df["fecha"].dropna().iloc[0] if df["fecha"].notna().any() else None
+        if fecha_valida is not None:
+            df["fecha"] = df["fecha"].fillna(fecha_valida)
+            st.info(f"📅 Fecha detectada en el archivo: **{fecha_valida.strftime('%d/%m/%Y')}**")
+            df["fecha"] = df["fecha"].dt.strftime("%Y-%m-%d")
         else:
             st.warning("⚠️ No se encontró ninguna fecha válida en el archivo.")
 
