@@ -15,6 +15,9 @@ env/
 # Streamlit secrets (NUNCA subir a GitHub)
 .streamlit/secrets.toml
 
+# Scripts con credenciales (NUNCA subir)
+fix_fecha_mayo.py
+
 # IDE
 .vscode/
 .idea/
