@@ -70,8 +70,17 @@ def limpiar_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     if "transito" in df.columns:
         df["transito"] = df["transito"].fillna(0)
 
-    # Mantener solo columnas esperadas
-    columnas_presentes = [c for c in COLUMNAS_ESQUEMA if c in df.columns]
+    # Extraer la marca dinámicamente
+    import re
+    from backend.constantes import MARCAS_EXISTENTES
+    if "item" in df.columns:
+        patron = "|".join(re.escape(m) for m in MARCAS_EXISTENTES)
+        df["marca"] = df["item"].str.extract(f"({patron})", flags=re.IGNORECASE, expand=False).str.upper()
+        df["marca"] = df["marca"].fillna("OTRA")
+
+    # Mantener solo columnas esperadas (agregamos 'marca')
+    columnas_esperadas = COLUMNAS_ESQUEMA + ["marca"]
+    columnas_presentes = [c for c in columnas_esperadas if c in df.columns]
     df = df[columnas_presentes]
 
     return df.reset_index(drop=True)

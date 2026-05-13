@@ -74,7 +74,7 @@ def render(df_raw):
                                 )
                                 continue
 
-                        n = insertar_datos(df_limpio, NOMBRE_TABLA)
+                        n = insertar_datos(df_limpio)
                         total_insertados += n
                     progress.progress((idx + 1) / len(archivos))
 

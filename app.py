@@ -10,7 +10,7 @@ from backend.constantes import (
     DARK, GREEN, GREEN_LIGHT, GRAY, GRAY_LIGHT, WHITE,
     NOMBRE_TABLA, MARCAS_EXISTENTES,
 )
-from backend.database import verificar_o_crear_tabla, cargar_tabla, obtener_rango_fechas
+from backend.database import verificar_o_crear_tabla, cargar_tabla, obtener_rango_fechas, obtener_marcas
 
 from views import resumen, analisis_producto, carga_datos
 
@@ -240,7 +240,7 @@ hoy = datetime.date.today()
 inicio_mes = hoy.replace(day=1)
 
 # ── Consulta ligera: solo min/max fechas (no carga toda la tabla) ──
-fecha_min_str, fecha_max_str = obtener_rango_fechas(NOMBRE_TABLA)
+fecha_min_str, fecha_max_str = obtener_rango_fechas()
 
 if fecha_min_str and fecha_max_str:
     fecha_min_db = datetime.date.fromisoformat(fecha_min_str)
@@ -277,10 +277,11 @@ with st.sidebar:
 
     # ── Filtro de marcas ──
     st.markdown("### 🏷️ Filtro de marcas")
+    marcas_dinamicas = obtener_marcas()
     marcas_seleccionadas = st.multiselect(
         "Marcas",
-        options=MARCAS_EXISTENTES,
-        default=MARCAS_EXISTENTES,
+        options=marcas_dinamicas,
+        default=marcas_dinamicas,
         key="marcas_sel",
         help="Selecciona las marcas a mostrar. Si no seleccionas ninguna, se muestran todos los productos.",
     )
@@ -305,13 +306,12 @@ with st.sidebar:
 # ── Cargar SOLO los datos del rango seleccionado (filtrado server-side) ──
 str_inicio = fecha_inicio.strftime("%Y-%m-%d")
 str_fin = fecha_fin.strftime("%Y-%m-%d")
-df_filtrado_fecha = cargar_tabla(NOMBRE_TABLA, fecha_inicio=str_inicio, fecha_fin=str_fin)
+df_filtrado_fecha = cargar_tabla(fecha_inicio=str_inicio, fecha_fin=str_fin)
 
-# ── Aplicar filtro de marcas (client-side) ──
-if marcas_seleccionadas and not df_filtrado_fecha.empty and "item" in df_filtrado_fecha.columns:
-    patron_marcas = "|".join(re.escape(m) for m in marcas_seleccionadas)
+# ── Aplicar filtro de marcas (client-side nativo) ──
+if marcas_seleccionadas and not df_filtrado_fecha.empty and "marca" in df_filtrado_fecha.columns:
     df_filtrado_fecha = df_filtrado_fecha[
-        df_filtrado_fecha["item"].str.contains(patron_marcas, case=False, na=False)
+        df_filtrado_fecha["marca"].isin(marcas_seleccionadas)
     ]
 
 
