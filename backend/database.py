@@ -149,6 +149,14 @@ def insertar_datos(df: pd.DataFrame) -> int:
     ]
     df_inventario = df[[c for c in cols_inventario if c in df.columns]].copy()
     
+    # Agrupar por fecha y código de barras para evitar error de duplicados en el UPSERT
+    # ("ON CONFLICT DO UPDATE command cannot affect row a second time")
+    df_inventario = df_inventario.groupby(
+        ["fecha", "codigo_de_barras_padre"], 
+        as_index=False, 
+        dropna=True
+    ).sum(min_count=1)
+    
     registros_inv = df_inventario.to_dict(orient="records")
     for rec in registros_inv:
         for k, v in rec.items():
