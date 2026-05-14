@@ -133,8 +133,11 @@ def insertar_datos(df: pd.DataFrame) -> int:
     registros_prod = df_productos.to_dict(orient="records")
     for rec in registros_prod:
         for k, v in rec.items():
-            if isinstance(v, float) and (math.isnan(v) or math.isinf(v)):
-                rec[k] = None
+            if isinstance(v, float):
+                if math.isnan(v) or math.isinf(v):
+                    rec[k] = None
+                elif v.is_integer():
+                    rec[k] = int(v)
     
     if registros_prod:
         supabase.table("productos").upsert(
@@ -160,8 +163,11 @@ def insertar_datos(df: pd.DataFrame) -> int:
     registros_inv = df_inventario.to_dict(orient="records")
     for rec in registros_inv:
         for k, v in rec.items():
-            if isinstance(v, float) and (math.isnan(v) or math.isinf(v)):
-                rec[k] = None
+            if isinstance(v, float):
+                if math.isnan(v) or math.isinf(v):
+                    rec[k] = None
+                elif v.is_integer():
+                    rec[k] = int(v)
                 
     insertados = 0
     batch_size = 500
