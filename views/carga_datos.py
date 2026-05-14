@@ -17,17 +17,149 @@ def render(df_raw):
     st.caption("Sube archivos Excel (.xlsx) con el formato estándar de inventarios. "
                "Las primeras 4 filas del archivo se ignoran automáticamente.")
 
-    # Mostrar fechas ya cargadas
-    if not df_raw.empty:
-        df_temp = preparar_df(df_raw)
-        if "fecha" in df_temp.columns:
-            fechas_cargadas = sorted(df_temp["fecha"].dropna().unique())
-            fechas_str = [str(f)[:10] for f in fechas_cargadas]
-            with st.expander(f"📅 Fechas ya cargadas ({len(fechas_str)})", expanded=False):
-                chips = " · ".join(fechas_str[-30:])
-                st.markdown(f"<p style='color:{GREEN_LIGHT}'>{chips}</p>", unsafe_allow_html=True)
-                if len(fechas_str) > 30:
-                    st.caption(f"… y {len(fechas_str) - 30} más")
+    # Mostrar fechas ya cargadas en formato heatmap estilo GitHub
+    fechas_existentes = obtener_fechas_cargadas()
+    if fechas_existentes:
+        import datetime
+        fecha_inicio = st.session_state.get("fecha_inicio", datetime.date.today().replace(day=1))
+        fecha_fin = st.session_state.get("fecha_fin", datetime.date.today())
+        
+        hoy = datetime.date.today()
+        current_month_start = fecha_inicio.replace(day=1)
+        end_month_start = fecha_fin.replace(day=1)
+
+        months_blocks = []
+        
+        while current_month_start <= end_month_start:
+            meses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+            nombre_mes = meses[current_month_start.month - 1]
+            year = current_month_start.year
+            
+            # Encontrar fin del mes actual
+            next_month_start = current_month_start.replace(day=28) + datetime.timedelta(days=4)
+            next_month_start = next_month_start.replace(day=1)
+            this_month_end = next_month_start - datetime.timedelta(days=1)
+            
+            cal_start = current_month_start - datetime.timedelta(days=current_month_start.weekday())
+            cal_end = this_month_end + datetime.timedelta(days=6 - this_month_end.weekday())
+            
+            weeks_html = []
+            current = cal_start
+            while current <= cal_end:
+                current_week = []
+                for _ in range(7):
+                    if current.month != current_month_start.month:
+                        color_class = "day-empty"
+                        title = ""
+                    else:
+                        date_str = current.strftime("%Y-%m-%d")
+                        if current > hoy:
+                            color_class = "day-future"
+                            title = f"{date_str} (Futuro)"
+                        elif date_str in fechas_existentes:
+                            color_class = "day-loaded"
+                            title = f"{date_str} (Cargado)"
+                        else:
+                            color_class = "day-missed"
+                            title = f"{date_str} (Falta)"
+                    current_week.append(f'<div class="github-day {color_class}" title="{title}"></div>')
+                    current += datetime.timedelta(days=1)
+                weeks_html.append(f'<div class="github-week">{"".join(current_week)}</div>')
+            
+            month_html = f"""
+<div class="month-block">
+    <div class="month-label">{nombre_mes} {year}</div>
+    <div class="month-grid">
+        {"".join(weeks_html)}
+    </div>
+</div>
+"""
+            months_blocks.append(month_html)
+            
+            current_month_start = next_month_start
+
+        html = f"""
+<style>
+.github-calendar-wrapper {{
+display: flex;
+flex-direction: column;
+gap: 12px;
+background: #1b1b1e;
+padding: 20px;
+border-radius: 8px;
+border: 1px solid #3a3a3e;
+margin-bottom: 16px;
+box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}}
+.github-calendar-inner {{
+display: flex;
+flex-direction: row;
+gap: 28px;
+flex-wrap: wrap;
+}}
+.month-block {{
+display: flex;
+flex-direction: column;
+gap: 8px;
+}}
+.month-label {{
+font-size: 13px;
+color: #8b949e;
+font-weight: 500;
+}}
+.month-grid {{
+display: flex;
+flex-direction: row;
+gap: 6px;
+}}
+.github-week {{
+display: flex;
+flex-direction: column;
+gap: 6px;
+}}
+.github-day {{
+width: 18px;
+height: 18px;
+border-radius: 4px;
+}}
+.day-loaded {{ background-color: #39d353; }}
+.day-missed {{ background-color: #f85149; }}
+.day-future {{ background-color: #2a2a2e; }}
+.day-empty {{ background-color: transparent; }}
+.calendar-legend {{
+display: flex;
+gap: 16px;
+font-size: 13px;
+color: #8b949e;
+align-items: center;
+margin-top: 8px;
+padding-top: 14px;
+border-top: 1px solid #2a2a2e;
+}}
+.legend-item {{
+display: flex;
+align-items: center;
+gap: 6px;
+}}
+</style>
+<div class="github-calendar-wrapper">
+<div style="font-size: 16px; color: #f0f0f0; font-weight: 600; margin-bottom: 2px;">
+🗓️ Calendario de Cargas
+</div>
+<div style="font-size: 13px; color: #8b949e; margin-bottom: 8px;">
+Mostrando el estado de subida de los meses en el rango seleccionado. Pasa el cursor sobre un día para ver su estado.
+</div>
+<div class="github-calendar-inner">
+{"".join(months_blocks)}
+</div>
+<div class="calendar-legend">
+<div class="legend-item"><div class="github-day day-loaded"></div> Cargado</div>
+<div class="legend-item"><div class="github-day day-missed"></div> Falta</div>
+<div class="legend-item"><div class="github-day day-future"></div> Futuro</div>
+</div>
+</div>
+"""
+        st.markdown(html, unsafe_allow_html=True)
 
     st.markdown("---")
 
