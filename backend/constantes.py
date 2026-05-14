@@ -43,6 +43,8 @@ MARCAS_EXISTENTES = [
     "KLIK GIN TONIC",
     "ESY",
     "OMEGASOL",
+    "SMART",
+    "ZICO",
 ]
 
 # ── Plotly ───────────────────────────────────────────────────
