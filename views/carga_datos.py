@@ -59,6 +59,9 @@ def render(df_raw):
                         elif date_str in fechas_existentes:
                             color_class = "day-loaded"
                             title = f"{date_str} (Cargado)"
+                        elif current == hoy:
+                            color_class = "day-process"
+                            title = f"{date_str} (En proceso)"
                         else:
                             color_class = "day-missed"
                             title = f"{date_str} (Falta)"
@@ -123,6 +126,7 @@ height: 18px;
 border-radius: 4px;
 }}
 .day-loaded {{ background-color: #39d353; }}
+.day-process {{ background-color: #f39c12; }}
 .day-missed {{ background-color: #f85149; }}
 .day-future {{ background-color: #2a2a2e; }}
 .day-empty {{ background-color: transparent; }}
@@ -154,6 +158,7 @@ Mostrando el estado de subida de los meses en el rango seleccionado. Pasa el cur
 </div>
 <div class="calendar-legend">
 <div class="legend-item"><div class="github-day day-loaded"></div> Cargado</div>
+<div class="legend-item"><div class="github-day day-process"></div> En proceso</div>
 <div class="legend-item"><div class="github-day day-missed"></div> Falta</div>
 <div class="legend-item"><div class="github-day day-future"></div> Futuro</div>
 </div>
