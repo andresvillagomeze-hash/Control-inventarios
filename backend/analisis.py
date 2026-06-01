@@ -42,22 +42,56 @@ def preparar_df(df_raw: pd.DataFrame) -> pd.DataFrame:
 # ██  CLASIFICACIÓN DE PRODUCTOS
 # ══════════════════════════════════════════════════════════════
 
-def clasificar_productos(df: pd.DataFrame, umbral_std: float = 1.0,
+def clasificar_productos(df: pd.DataFrame, dias_estancado_umbral: int = 3,
                           dias_desabasto: int = 3) -> pd.DataFrame:
     """
     Clasifica cada producto (item) en:
-    - 🌟 Estrella: CV > P90(cv)  Y  inventario promedio >= P90(inv_promedio)
-    - 🚨 Desabastecido: inventario = 0 en las últimas N fechas
-    - ⚠️ Estancado: inventario > 0 pero std ≈ 0
+    - 🌟 Estrella: CV > P50(cv)  Y  inventario promedio >= P50(inv_promedio)
+    - 🚨 Desabastecido: inventario = 0 en las últimas N fechas consecutivas
+    - ⚠️ Estancado: inventario > 0 y constante por más de K fechas consecutivas
 
     Los umbrales de CV e inventario mínimo se calculan automáticamente
-    como el percentil 90 de los datos.
+    como el percentil 50 (mediana) de los datos.
     """
     col_inv = "inventario_cd_en_unidades"
     if col_inv not in df.columns or "item" not in df.columns:
         return pd.DataFrame()
 
-    # Agrupar por item
+    # 1. Calcular días consecutivos de desabasto y de stock estancado desde la fecha más reciente
+    dias_consecutivos = []
+    for item_name, grupo in df.groupby("item"):
+        # Ordenamos descendente por fecha para ir desde el día más reciente hacia atrás
+        grupo_sorted = grupo.sort_values("fecha", ascending=False)
+        inventarios = grupo_sorted[col_inv].tolist()
+        
+        # Días consecutivos desabastecido (inventario es 0 o NaN)
+        consec_desabasto = 0
+        for val in inventarios:
+            if pd.isna(val) or val == 0:
+                consec_desabasto += 1
+            else:
+                break
+                
+        # Días consecutivos estancado (inventario tiene el mismo valor que el último registro)
+        consec_estancado = 0
+        if inventarios:
+            latest_val = inventarios[0]
+            if pd.notna(latest_val):
+                for val in inventarios:
+                    if pd.notna(val) and val == latest_val:
+                        consec_estancado += 1
+                    else:
+                        break
+        
+        dias_consecutivos.append({
+            "item": item_name,
+            "dias_desabasto": consec_desabasto,
+            "dias_estancado": consec_estancado
+        })
+        
+    df_consec = pd.DataFrame(dias_consecutivos)
+
+    # 2. Agrupar por item para estadísticas básicas
     stats = df.groupby("item")[col_inv].agg(
         ["mean", "std", "min", "max", "count"]
     ).reset_index()
@@ -69,24 +103,27 @@ def clasificar_productos(df: pd.DataFrame, umbral_std: float = 1.0,
         axis=1,
     )
 
+    # Combinar con los días consecutivos calculados
+    if not df_consec.empty:
+        stats = stats.merge(df_consec, on="item", how="left")
+    else:
+        stats["dias_desabasto"] = 0
+        stats["dias_estancado"] = 0
+    stats["dias_desabasto"] = stats["dias_desabasto"].fillna(0).astype(int)
+    stats["dias_estancado"] = stats["dias_estancado"].fillna(0).astype(int)
+
     # ── Calcular umbrales automáticos (mediana) ──
     umbral_cv = stats["cv"].quantile(0.50)
     umbral_inv_min = stats["inv_promedio"].quantile(0.50)
     _cv_p90 = round(umbral_cv, 4)
     _inv_p90 = round(umbral_inv_min, 2)
 
-    # Últimas N fechas para desabasto
+    # Últimas N fechas para desabasto (como soporte)
     fechas_unicas = sorted(df["fecha"].dropna().unique())
     if len(fechas_unicas) >= dias_desabasto:
         ultimas_fechas = fechas_unicas[-dias_desabasto:]
     else:
         ultimas_fechas = fechas_unicas
-
-    df_reciente = df[df["fecha"].isin(ultimas_fechas)]
-    inv_reciente = df_reciente.groupby("item")[col_inv].mean().reset_index()
-    inv_reciente.columns = ["item", "inv_reciente"]
-    stats = stats.merge(inv_reciente, on="item", how="left")
-    stats["inv_reciente"] = stats["inv_reciente"].fillna(0)
 
     # Último inventario
     if len(fechas_unicas) > 0:
@@ -100,9 +137,9 @@ def clasificar_productos(df: pd.DataFrame, umbral_std: float = 1.0,
 
     # Clasificación
     def clasificar(row):
-        if row["inv_reciente"] == 0 and row["registros"] >= dias_desabasto:
+        if row["dias_desabasto"] >= dias_desabasto and row["registros"] >= dias_desabasto:
             return "🚨 Desabastecido"
-        if row["inv_promedio"] > 0 and row["inv_std"] <= umbral_std:
+        if row["inv_ultimo"] > 0 and row["dias_estancado"] > dias_estancado_umbral:
             return "⚠️ Estancado"
         if row["cv"] > umbral_cv and row["inv_promedio"] >= umbral_inv_min:
             return "🌟 Estrella"

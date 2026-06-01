@@ -12,7 +12,7 @@ from backend.constantes import GREEN, GREEN_LIGHT, RED, AMBER, WHITE
 from backend.analisis import preparar_df, clasificar_productos, calcular_consumo_mensual, plotly_layout
 
 
-def render(df_raw, umbral_std, dias_desabasto):
+def render(df_raw, dias_estancado_umbral, dias_desabasto):
     """Renderiza la pestaña de resumen de rotación."""
     if df_raw.empty:
         st.info("📭 No hay datos. Ve a la pestaña **📤 Carga de Datos** para subir archivos Excel.")
@@ -21,7 +21,7 @@ def render(df_raw, umbral_std, dias_desabasto):
     df = preparar_df(df_raw)
 
     # ── Clasificar ──
-    stats = clasificar_productos(df, umbral_std=umbral_std, dias_desabasto=dias_desabasto)
+    stats = clasificar_productos(df, dias_estancado_umbral=dias_estancado_umbral, dias_desabasto=dias_desabasto)
 
     if stats.empty:
         st.warning("⚠️ No se pudo clasificar. Verifica que existan las columnas 'item' e 'inventario_cd_en_unidades'.")
@@ -91,11 +91,13 @@ def render(df_raw, umbral_std, dias_desabasto):
     with col_desab:
         st.markdown(f"#### 🚨 Productos Desabastecidos ({len(desabastecidos)})")
         if not desabastecidos.empty:
-            display_cols = ["item", "inv_promedio", "inv_ultimo", "registros"]
+            display_cols = ["item", "dias_desabasto"]
             if "clasificacion" in desabastecidos.columns:
                 display_cols.insert(1, "clasificacion")
+            df_desab = desabastecidos[display_cols].head(20).copy()
+            df_desab.columns = [c.replace("_", " ").title() for c in df_desab.columns]
             st.dataframe(
-                desabastecidos[display_cols].head(20),
+                df_desab,
                 use_container_width=True, hide_index=True,
             )
         else:
@@ -104,11 +106,13 @@ def render(df_raw, umbral_std, dias_desabasto):
     with col_estanc:
         st.markdown(f"#### ⚠️ Productos Estancados ({len(estancados)})")
         if not estancados.empty:
-            display_cols = ["item", "inv_promedio", "inv_std", "inv_ultimo"]
+            display_cols = ["item", "inv_ultimo", "dias_estancado"]
             if "clasificacion" in estancados.columns:
                 display_cols.insert(1, "clasificacion")
+            df_est = estancados[display_cols].head(20).copy()
+            df_est.columns = [c.replace("_", " ").title() for c in df_est.columns]
             st.dataframe(
-                estancados[display_cols].head(20),
+                df_est,
                 use_container_width=True, hide_index=True,
             )
         else:

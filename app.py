@@ -290,10 +290,10 @@ with st.sidebar:
 
     # ── Parámetros de clasificación ──
     st.markdown("### ⚙️ Parámetros de clasificación")
-    umbral_std = st.slider(
-        "Umbral Std (Estancado)",
-        min_value=0.0, max_value=10.0, value=1.0, step=0.5,
-        help="Productos con desviación estándar menor a este valor se consideran estancados.",
+    dias_estancado_umbral = st.slider(
+        "Días para estancado",
+        min_value=1, max_value=15, value=3,
+        help="Productos con la misma cantidad de inventario por más de N días se consideran estancados.",
     )
     dias_desabasto = st.slider(
         "Días para desabasto",
@@ -301,7 +301,7 @@ with st.sidebar:
         help="Un producto con inventario 0 en los últimos N días se marca como desabastecido.",
     )
     st.caption("📊 Los umbrales de CV e inventario mínimo para Estrella "
-               "se calculan automáticamente como el percentil 90 de los datos.")
+               "se calculan automáticamente como la mediana (percentil 50) de los datos.")
 
 # ── Cargar SOLO los datos del rango seleccionado (filtrado server-side) ──
 str_inicio = fecha_inicio.strftime("%Y-%m-%d")
@@ -326,7 +326,7 @@ tab1, tab2, tab3 = st.tabs([
 ])
 
 with tab1:
-    resumen.render(df_filtrado_fecha, umbral_std, dias_desabasto)
+    resumen.render(df_filtrado_fecha, dias_estancado_umbral, dias_desabasto)
 
 with tab2:
     analisis_producto.render(df_filtrado_fecha)
