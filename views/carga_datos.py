@@ -53,13 +53,13 @@ def render(df_raw):
                         title = ""
                     else:
                         date_str = current.strftime("%Y-%m-%d")
-                        if current > hoy:
-                            color_class = "day-future"
-                            title = f"{date_str} (Futuro)"
-                        elif date_str in fechas_existentes:
+                        if date_str in fechas_existentes:
                             color_class = "day-loaded"
                             title = f"{date_str} (Cargado)"
-                        elif current == hoy:
+                        elif current >= hoy:
+                            color_class = "day-future"
+                            title = f"{date_str} (Futuro)"
+                        elif current == hoy - datetime.timedelta(days=1):
                             color_class = "day-process"
                             title = f"{date_str} (En proceso)"
                         else:
